@@ -1,47 +1,75 @@
 "use client";
-import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { ReactifiedModule } from "@yandex/ymaps3-types/reactify/reactify";
-import { LOCATION } from "../model/constants";
 
-// const ymaps3Reactify = await ymaps3.import("@yandex/ymaps3-reactify");
-// const reactify = ymaps3Reactify.reactify.bindTo(React, ReactDOM);
-// const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker } =
-//   reactify.module(ymaps3);
+import {
+  YMap,
+  YMapLocationRequest,
+} from "@yandex/ymaps3-types/imperative/YMap";
+import { useDebouncedCallback } from "use-debounce";
+import React, { useMemo, useRef, useState } from "react";
+import MarkerWithPopup from "./marker-with-popup";
+import { Place } from "@/shared/types/place";
+import { usePageState } from "@/shared/providers/page-provider";
+import { getBboxByCoordinates } from "../helpers/get-bbox-by-coordinates";
+import { useMap } from "@/shared/providers/map-provider";
 
-type ReactifiedApi = ReactifiedModule<typeof ymaps3>;
+interface MapProps {
+  places: Place[];
+}
 
-export const Map = () => {
-  const [reactifiedApi, setReactifiedApi] = React.useState<ReactifiedApi>();
+export const Map = ({ places }: MapProps) => {
+  const mapRef = useRef<(YMap & { container: HTMLElement }) | null>(null);
+  const { selectedPlaceId, setBounds, selectPlace } = usePageState();
+  const startBounds = useMemo(
+    () =>
+      getBboxByCoordinates(
+        places.map((place) => [place.longitude, place.latitude])
+      ),
+    [places]
+  );
+  const [location] = useState<YMapLocationRequest>(
+    startBounds ? { bounds: startBounds } : { zoom: 0 }
+  );
+  const setBoundsDebounced = useDebouncedCallback(
+    (value) => setBounds(value),
+    500
+  );
+  const { reactifyApi } = useMap();
 
-  React.useEffect(() => {
-    Promise.all([ymaps3.import("@yandex/ymaps3-reactify"), ymaps3.ready]).then(
-      ([{ reactify }]) =>
-        setReactifiedApi(reactify.bindTo(React, ReactDOM).module(ymaps3))
+  if (!reactifyApi)
+    return (
+      <div className="flex w-full h-full items-center justify-center">
+        Загрузка лучшей карты в мире...
+      </div>
     );
-  }, []);
 
-  if (!reactifiedApi) {
-    return null;
-  }
-
-  const { YMapMarker, YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer } =
-    reactifiedApi;
+  const {
+    YMap,
+    YMapListener,
+    YMapDefaultSchemeLayer,
+    YMapDefaultFeaturesLayer,
+  } = reactifyApi;
 
   return (
-    // <YMap location={LOCATION}>
-    //   <YMapDefaultSchemeLayer />
-    //   <YMapDefaultFeaturesLayer />
-    // </YMap>
-    <YMap location={LOCATION} mode="vector">
+    <YMap margin={[20, 20, 20, 20]} location={location} ref={mapRef}>
       <YMapDefaultSchemeLayer />
       <YMapDefaultFeaturesLayer />
 
-      <YMapMarker coordinates={[25.229762, 55.289311]} draggable={true}>
-        <section>
-          <h1>You can drag this header</h1>
-        </section>
-      </YMapMarker>
+      <YMapListener
+        onUpdate={({ location }) => {
+          setBoundsDebounced(location.bounds);
+        }}
+      />
+
+      {places.map((place) => (
+        <MarkerWithPopup
+          key={place.id}
+          place={place}
+          mapRef={mapRef}
+          reactifyApi={reactifyApi}
+          selected={selectedPlaceId === place.id}
+          selectPlace={selectPlace}
+        />
+      ))}
     </YMap>
   );
 };
