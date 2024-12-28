@@ -11,6 +11,7 @@ import { Place } from "@/shared/types/place";
 import { usePageState } from "@/shared/providers/page-provider";
 import { getBboxByCoordinates } from "../helpers/get-bbox-by-coordinates";
 import { useMap } from "@/shared/providers/map-provider";
+import { LOCATION } from "../model/constants";
 
 interface MapProps {
   places: Place[];
@@ -49,8 +50,10 @@ export const Map = ({ places }: MapProps) => {
     YMapDefaultFeaturesLayer,
   } = reactifyApi;
 
+  console.log(location);
+
   return (
-    <YMap margin={[20, 20, 20, 20]} location={location} ref={mapRef}>
+    <YMap margin={[20, 20, 20, 20]} location={LOCATION} ref={mapRef}>
       <YMapDefaultSchemeLayer />
       <YMapDefaultFeaturesLayer />
 
