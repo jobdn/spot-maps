@@ -17,6 +17,7 @@
         "name": "next"
       }
     ],
+    "types": ["@yandex/ymaps3-types"],
     "paths": {
       "@/*": ["./src/*"]
     }
