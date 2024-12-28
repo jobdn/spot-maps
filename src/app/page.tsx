@@ -2,6 +2,7 @@ import { Map } from "@/entities/map";
 import { MapProvider } from "@/shared/providers/map-provider";
 import { PageStateProvider } from "@/shared/providers/page-provider";
 import { places } from "./data/base";
+import { PlacesList } from "@/entities/place";
 
 export default function Home() {
   const apiUrl = `https://api-maps.yandex.ru/3.0/?apikey=${process.env.NEXT_PUBLIC_YANDEX_MAP_KEY}&lang=ru_RU`;
@@ -13,8 +14,8 @@ export default function Home() {
           <div className="flex items-center justify-between mb-1">
             <div>Places - {places.length}</div>
           </div>
-          {/* <Bounds />
-          <List places={places} /> */}
+
+          <PlacesList places={places} />
         </div>
 
         <div className="relative h-full w-full">
